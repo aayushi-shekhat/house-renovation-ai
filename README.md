@@ -91,27 +91,27 @@ Deploy the `frontend` directory to Vercel. Vercel builds the Vite application wi
 
 Deploy the repository root as a Render Python web service. The included `render.yaml` provisions the API service and a PostgreSQL database when Blueprint deployment is available.
 
-### Local development
 
 From the repository root:
 
-```powershell
+Deploy the repository root to Vercel. The root `vercel.json` configures two services in one project: the Vite frontend and the FastAPI API. The frontend is public at `/`, while API requests under `/api/` are routed to the API service. The API service remains internal except for that rewrite.
 py -3.12 -m venv .venv
+The frontend uses same-origin `/api/v1` requests in production. Set `VITE_API_BASE_URL=http://localhost:8000` only for local development when the Vite dev server and API run on separate ports.
 .\.venv\Scripts\Activate.ps1
+The API still requires a PostgreSQL `DATABASE_URL` and any optional provider/storage variables listed below. Run the Alembic migration as part of the API deployment or from a deployment shell.
 python -m pip install -e ".[dev]"
 \.venv\Scripts\alembic.exe upgrade head
-$env:PYTHONPATH = "backend"
+2. Import the repository into Vercel with the repository root as the project root.
 \.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir backend --reload
-```
-
+3. Configure the API service environment variables, including `DATABASE_URL`, `CORS_ORIGINS`, and any optional provider keys. Leave `OPENAI_API_KEY` empty to use the deterministic preview fallback.
 In a second terminal:
-
+4. Run the production migration from the API service shell or deployment command:
 ```powershell
-Set-Location frontend
+5. Verify `/api/v1/health`, `/api/v1/health/db`, and `/docs` on the Vercel domain.
 npm install
-npm run dev
+ `VITE_API_BASE_URL`: optional frontend API base URL; defaults to same-origin `/api/v1` in production.
 ```
-
+ `VITE_API_BASE_URL`: optional frontend API base URL, defaulting to same-origin `/api/v1`; use `http://localhost:8000` for the separate local Vite/API setup.
 ### Production environment variables
 
 Backend:
