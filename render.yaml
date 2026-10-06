@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: house-renovation-api
+    runtime: python
+    buildCommand: pip install .
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: house-renovation-db
+          property: connectionString
+      - key: APP_NAME
+        value: House Renovation System
+      - key: ENVIRONMENT
+        value: production
+      - key: STORAGE_ROOT
+        value: ./data/assets
+      - key: CORS_ORIGINS
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+databases:
+  - name: house-renovation-db
+    databaseName: house_renovation
+    user: house_renovation
+    plan: free
