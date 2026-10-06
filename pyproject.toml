@@ -37,3 +37,6 @@ testpaths = ["backend/tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.vercel]
+entrypoint = "backend.app.main:app"
