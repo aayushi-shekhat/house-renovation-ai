@@ -12,13 +12,13 @@ from app.domain.models import DesignRevision, Material, MaterialAssignment, Mate
 
 
 CATALOG = [
-    ("Exterior Paint", "paint", "gallon", "4", None, "38", "22", "10", ["wall", "pillar", "parapet", "gate"]),
-    ("Textured Exterior Paint", "textured paint", "gallon", "3", None, "52", "28", "12", ["wall", "pillar", "parapet"]),
+    ("Exterior Paint", "paint", "gallon", "4", None, "38", "22", "10", ["wall", "window", "pillar", "parapet", "gate", "roof_edge"]),
+    ("Textured Exterior Paint", "textured paint", "gallon", "3", None, "52", "28", "12", ["wall", "pillar", "parapet", "roof_edge"]),
     ("Natural Stone Cladding", "cladding", "sqft", "1", None, "18", "9", "12", ["wall", "pillar", "parapet"]),
     ("Exterior Wall Tiles", "tiles", "box", "12", "10", "42", "14", "10", ["wall", "parapet"]),
     ("Glass Railing", "railing", "linear_ft", "1", None, "95", "32", "8", ["balcony"]),
     ("Metal Railing", "railing", "linear_ft", "1", None, "48", "20", "8", ["balcony", "gate"]),
-    ("Exterior Decorative Panels", "panels", "sqft", "1", None, "24", "11", "10", ["wall", "pillar", "parapet"]),
+    ("Exterior Decorative Panels", "panels", "sqft", "1", None, "24", "11", "10", ["wall", "window", "pillar", "parapet", "roof_edge"]),
 ]
 
 
@@ -29,6 +29,7 @@ class MaterialError(AppError):
 
 def seed_catalog(session: Session) -> None:
     if session.scalar(select(Material.id).limit(1)):
+        _sync_compatibility(session)
         return
     for name, category, unit, coverage, pack, material_rate, labor_rate, wastage, surfaces in CATALOG:
         material = Material(name=name, category=category, description=f"Prototype {name.lower()} for exterior renovation.")
@@ -39,6 +40,23 @@ def seed_catalog(session: Session) -> None:
         ))
         session.add(material)
     session.commit()
+
+
+def _sync_compatibility(session: Session) -> None:
+    # Databases seeded before a CATALOG mapping change keep stale compatibility lists.
+    surfaces_by_name = {entry[0]: entry[8] for entry in CATALOG}
+    changed = False
+    for material in session.scalars(select(Material)).unique():
+        surfaces = surfaces_by_name.get(material.name)
+        if surfaces is None:
+            continue
+        for version in material.versions:
+            specification = version.specification or {}
+            if specification.get("compatible_surface_types") != surfaces:
+                version.specification = {**specification, "compatible_surface_types": surfaces}
+                changed = True
+    if changed:
+        session.commit()
 
 
 def _swatch(category: str) -> str:
