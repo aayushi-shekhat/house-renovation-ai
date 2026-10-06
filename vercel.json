@@ -4,7 +4,7 @@
     "house-renovation-api": {
       "root": ".",
       "framework": "fastapi",
-      "buildCommand": "pip install ."
+      "buildCommand": "pip install . && alembic upgrade head"
     },
     "frontend": {
       "root": "frontend",
