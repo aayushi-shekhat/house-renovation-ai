@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from pathlib import Path
 from fastapi import APIRouter, Depends, File, UploadFile
@@ -14,6 +15,7 @@ from app.services.image_service import upload_image
 from app.storage.local import LocalFilesystemStorage
 
 router = APIRouter(tags=["images"])
+logger = logging.getLogger(__name__)
 
 
 def get_storage(settings: Settings = Depends(get_settings)) -> LocalFilesystemStorage:
@@ -34,10 +36,32 @@ async def create_image(
             session, storage, settings, project_id, file.filename or "upload", file.content_type, content
         )
     except AppError as exc:
+        log_data = {
+            "project_id": str(project_id),
+            "filename_suffix": Path(file.filename or "upload").suffix.lower(),
+            "content_type": file.content_type,
+            "content_bytes": len(content) if "content" in locals() else None,
+            "error_code": exc.code,
+        }
+        if exc.__cause__ is not None:
+            logger.exception("Image upload failed", extra=log_data)
+        else:
+            logger.warning("Image upload rejected", extra=log_data)
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": {"code": exc.code, "message": exc.message, "details": exc.details}},
         )
+    except Exception:
+        logger.exception(
+            "Unexpected image upload failure",
+            extra={
+                "project_id": str(project_id),
+                "filename_suffix": Path(file.filename or "upload").suffix.lower(),
+                "content_type": file.content_type,
+                "content_bytes": len(content) if "content" in locals() else None,
+            },
+        )
+        raise
     return ImageUploadResponse(
         image_id=image.id,
         project_id=image.project_id,

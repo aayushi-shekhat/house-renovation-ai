@@ -1,4 +1,5 @@
 from functools import lru_cache
+import os
 from pathlib import Path
 
 from pydantic import Field, field_validator
@@ -10,15 +11,23 @@ from sqlalchemy.exc import ArgumentError
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 
+def default_storage_root() -> str:
+    return "/tmp/house-renovation-assets" if os.getenv("VERCEL") == "1" else "./data/assets"
+
+
+def default_max_upload_bytes() -> int:
+    return 4_000_000 if os.getenv("VERCEL") == "1" else 10 * 1024 * 1024
+
+
 class Settings(BaseSettings):
     app_name: str = "House Renovation System"
     environment: str = "development"
     database_url: str = "postgresql+psycopg://postgres@localhost:5432/house_renovation"
-    storage_root: str = "./data/assets"
+    storage_root: str = Field(default_factory=default_storage_root)
     openai_api_key: str | None = None
     openai_image_model: str = "gpt-image-1"
     yoloe_model_path: str | None = None
-    max_upload_bytes: int = Field(default=10 * 1024 * 1024, gt=0)
+    max_upload_bytes: int = Field(default_factory=default_max_upload_bytes, gt=0)
     min_image_width: int = Field(default=256, gt=0)
     min_image_height: int = Field(default=256, gt=0)
     max_image_width: int = Field(default=12000, gt=0)

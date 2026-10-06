@@ -6,6 +6,7 @@ const configuredApiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost
 const apiBase = configuredApiBase.replace(/\/$/, "").endsWith("/api/v1")
   ? configuredApiBase.replace(/\/$/, "")
   : `${configuredApiBase.replace(/\/$/, "")}/api/v1`;
+const maxUploadBytes = import.meta.env.PROD ? 4_000_000 : 10 * 1024 * 1024;
 const types = ["wall", "window", "balcony", "pillar", "parapet", "gate", "roof_edge"] as const;
 type RegionType = (typeof types)[number];
 const typeLabels: Record<RegionType, string> = { wall: "Wall", window: "Window", balcony: "Balcony", pillar: "Pillar / Column", parapet: "Parapet Wall", gate: "Gate Area", roof_edge: "Roof Edge" };
@@ -57,7 +58,7 @@ export function App() {
   function chooseFile(next: File | undefined) {
     if (!next) return;
     if (!["image/jpeg", "image/png", "image/webp"].includes(next.type)) return setMessage("Choose a JPEG, PNG, or WEBP image.");
-    if (next.size > 10 * 1024 * 1024) return setMessage("Images must be smaller than 10 MB.");
+    if (next.size > maxUploadBytes) return setMessage(`Images must be smaller than ${Math.floor(maxUploadBytes / 1_000_000)} MB.`);
     setFile(next); setPreview(URL.createObjectURL(next)); setMessage("");
   }
 

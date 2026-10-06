@@ -20,6 +20,18 @@ def test_project_root_env_file_loads_valid_database_url() -> None:
     assert settings.database_url.endswith("@localhost:5432/house_renovation")
 
 
+def test_vercel_uses_writable_ephemeral_storage(monkeypatch) -> None:
+    monkeypatch.setenv("VERCEL", "1")
+
+    settings = Settings(
+        _env_file=None,
+        database_url="postgresql+psycopg://postgres:secret@localhost:5432/house_renovation",
+    )
+
+    assert settings.storage_root == "/tmp/house-renovation-assets"
+    assert settings.max_upload_bytes == 4_000_000
+
+
 def test_database_url_rejects_non_postgres_or_missing_host() -> None:
     with pytest.raises(ValidationError, match="DATABASE_URL must be a PostgreSQL URL"):
         Settings(database_url="sqlite:///./local.db")
