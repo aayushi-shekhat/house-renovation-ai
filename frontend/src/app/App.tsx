@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import "./App.css";
 
-const configuredApiBase = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.PROD ? "" : "http://localhost:8000");
 const apiBase = configuredApiBase.replace(/\/$/, "").endsWith("/api/v1")
   ? configuredApiBase.replace(/\/$/, "")
   : `${configuredApiBase.replace(/\/$/, "")}/api/v1`;
